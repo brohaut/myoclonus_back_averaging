@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 my_data='/path/XXX.edf'
 raw = mne.io.read_raw_edf(my_data,preload=True)
 
-# Import sample EEG in .fif format
-sample_data='/Users/rohaut/Documents/Data/Columbia/Alex/EEG_sample.fif'
+# Import sample EEG in .fif format from https://github.com/brohaut/myoclonus_back_averaging
+sample_data='/path/EEG_sample.fif'
 mne.io.read_raw_fif(sample_data,preload=True)
 raw.set_channel_types({'CHIN1': 'emg','CHIN2': 'emg', 'ECGL': 'ecg','ECGR': 'ecg'})
 print(raw.info) ; raw.info['ch_names']
