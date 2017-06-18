@@ -2,7 +2,7 @@
 Jerk-locked EEG back averaging in MNE-python
 
 
-#Dependencies
+# Dependencies
 MNE: 0.13.dev0
 matplotlib: 1.5.1
 scipy: 0.17
