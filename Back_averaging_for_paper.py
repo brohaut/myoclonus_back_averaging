@@ -1,3 +1,4 @@
+# dependencies
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,39 +17,39 @@ raw.set_channel_types({'CHIN1': 'emg','CHIN2': 'emg', 'ECGL': 'ecg','ECGR': 'ecg
 print(raw.info) ; raw.info['ch_names']
 
 
-""" jerks detection"""
+""" jerk detection"""
 
 no_filt=raw.copy() # keep raw signal to compare whith filtered signal later
 
-# emg filtering
+# EMG filtering
 picks = mne.pick_types(raw.info, eeg=False , emg=True, ecg=False) # select channel to filter
 raw.notch_filter(60, picks=picks, filter_length='auto', phase='zero') # notch filter 60Hz
 raw.filter(1, None, picks=picks, filter_length='auto', phase='zero') # high pass filter 1Hz
 
-# compute the emg trigger channel (CHIN1-CHIN2) and inject it in trig_chaN1
+# compute the EMG trigger channel (CHIN1-CHIN2) and inject it in trig_chaN1
 trig_chaN1 = mne.pick_channels(raw.info['ch_names'], include=['CHIN1'])
 trig_chaN2 = mne.pick_channels(raw.info['ch_names'], include=['CHIN2'])
 trig_chan = raw._data[trig_chaN1[0], :] - raw._data[trig_chaN2[0], :]
 raw._data[trig_chaN1[0], :]=trig_chan
 
-# compute derivative emg trigger channel and inject it in trig_chaN2
+# compute derivative EMG trigger channel and inject it in trig_chaN2
 trig_chan_deriv = np.gradient(trig_chan[:])
 raw._data[trig_chaN2[0], :]=trig_chan_deriv
 
 # high pass filter on the derivative to remove slow sloop
 raw.filter(30, None, picks=trig_chaN2, filter_length='auto', phase='zero')
 
-# plot raw emg signal, filtered emg, derivative and filtered derivative in the same graph
-jitter=5e-4 # separtation between curves
+# plot raw EMG signal, filtered EMG, derivative and filtered derivative in the same graph
+jitter=5e-4 # set distance between curves
 plt.plot(raw._data[trig_chaN2[0],:]) # derivative HP 30Hz
 plt.plot(trig_chan_deriv[:]-jitter) # derivative
 plt.plot(raw._data[trig_chaN1[0],:]-2*jitter); # emg HP 1Hz + noch 60Hz
-plt.plot(no_filt._data[trig_chaN1[0], :] - no_filt._data[trig_chaN2[0], :] -3*jitter); # raw emg
+plt.plot(no_filt._data[trig_chaN1[0], :] - no_filt._data[trig_chaN2[0], :] -3*jitter); # raw EMG
 plt.show()
 
-# define the signal to use for jerk detection (trig_chaN1 or trig_chaN2)
+# define the signal (best signal/noise ratio) to use for jerk detection (trig_chaN1 or trig_chaN2)
 trig_chan=raw._data[trig_chaN2[0], :]
-# define the threshold for detection
+# define the detection threshold 
 thresh= 8e-6
 
 set_offset= 0 # set an offset if needed (in secondes)
@@ -76,7 +77,7 @@ raw._data[trig_ch, :]=triggers # replace STI 014 by triggers
 events = mne.find_events(raw)
 event_id = {'Jerk': 1}
 
-# filter the EEG (HP 0.5 Hz + 60Hz notch)
+# filter the EEG (high pass 0.5 Hz + 60Hz notch)
 picks=mne.pick_types(raw.info, eeg=True , emg=False, ecg=True)
 raw.notch_filter(60, picks=picks, filter_length='auto', phase='zero')
 raw.filter(0.5, None , picks=picks) #
@@ -85,7 +86,7 @@ montage = mne.channels.read_montage('standard_1020')
 raw.set_montage(montage) # set 10-20 montage for topoplot
 raw.set_eeg_reference(ref_channels=None) # set avergage reference
 
-# epoch from -300 to + 300ms according to jerks with a baseline correction applied from -300 to -200ms
+# epoch from -300 to + 300ms according to jerk with a baseline correction applied from -300 to -200ms
 tmin, tmax = -0.300, 0.300
 epochs = mne.Epochs(raw, events=events, event_id=event_id,tmin=tmin,tmax=tmax, baseline=(-0.3, -0.2))
 picks=mne.pick_types(epochs.info, eeg=True, emg=True, ecg=True)
@@ -93,11 +94,11 @@ evoked=epochs['Jerk'].average(picks=picks) # avergaging
 
 
 """plot the results"""
-#plot EEG with emg
+# plot EEG with emg
 picks=np.hstack((  mne.pick_types(epochs.info, eeg=True), trig_chaN1  ))
 evoked.plot(spatial_colors=True, gfp=False, picks=picks, ylim = dict(eeg=[-50, 50],emg=[-80, 20]))
-#plot EEG with topoplots
+# plot EEG with topoplots
 ts_args = dict(gfp=True); topomap_args = dict(sensors=False)
 evoked.plot_joint(title='', times='peaks',ts_args=ts_args)
-#plot topoplot
+# plot topoplot
 evoked.plot_topomap(times=[-0.02],sensors=False,vmin=-30,vmax=30)
