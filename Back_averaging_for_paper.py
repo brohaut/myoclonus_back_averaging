@@ -4,24 +4,26 @@ import matplotlib.pyplot as plt
 
 """import the EEG"""
 
-# Import EEG in .edf format
+# import EEG in .edf format
 my_data='/path/XXX.edf'
 raw = mne.io.read_raw_edf(my_data,preload=True)
 
-# Import sample EEG in .fif format from https://github.com/brohaut/myoclonus_back_averaging
+# import provided sample EEG in .fif format (available on https://github.com/brohaut/myoclonus_back_averaging)
 sample_data='/path/EEG_sample.fif'
 mne.io.read_raw_fif(sample_data,preload=True)
+
 raw.set_channel_types({'CHIN1': 'emg','CHIN2': 'emg', 'ECGL': 'ecg','ECGR': 'ecg'})
 print(raw.info) ; raw.info['ch_names']
 
 
-""" Jerks detection"""
+""" jerks detection"""
+
 no_filt=raw.copy() # keep raw signal to compare whith filtered signal later
 
 # emg filtering
-picks = mne.pick_types(raw.info, eeg=False , emg=True, ecg=False)
-raw.notch_filter(60, picks=picks, filter_length='auto', phase='zero')
-raw.filter(1, None, picks=picks, filter_length='auto', phase='zero')
+picks = mne.pick_types(raw.info, eeg=False , emg=True, ecg=False) # select channel to filter
+raw.notch_filter(60, picks=picks, filter_length='auto', phase='zero') # notch filter 60Hz
+raw.filter(1, None, picks=picks, filter_length='auto', phase='zero') # high pass filter 1Hz
 
 # compute the emg trigger channel (CHIN1-CHIN2) and inject it in trig_chaN1
 trig_chaN1 = mne.pick_channels(raw.info['ch_names'], include=['CHIN1'])
@@ -33,7 +35,7 @@ raw._data[trig_chaN1[0], :]=trig_chan
 trig_chan_deriv = np.gradient(trig_chan[:])
 raw._data[trig_chaN2[0], :]=trig_chan_deriv
 
-# HP filter on the derivative to remove slow sloop
+# high pass filter on the derivative to remove slow sloop
 raw.filter(30, None, picks=trig_chaN2, filter_length='auto', phase='zero')
 
 # plot raw emg signal, filtered emg, derivative and filtered derivative in the same graph
@@ -44,13 +46,12 @@ plt.plot(raw._data[trig_chaN1[0],:]-2*jitter); # emg HP 1Hz + noch 60Hz
 plt.plot(no_filt._data[trig_chaN1[0], :] - no_filt._data[trig_chaN2[0], :] -3*jitter); # raw emg
 plt.show()
 
-# Define the signal to use for Jerk detection (trig_chaN1 or trig_chaN2)
+# define the signal to use for jerk detection (trig_chaN1 or trig_chaN2)
 trig_chan=raw._data[trig_chaN2[0], :]
-# Define the threshold for detection
+# define the threshold for detection
 thresh= 8e-6
 
-
-set_offset= 0 # set an offset in secondes if needed
+set_offset= 0 # set an offset if needed (in secondes)
 offset= int(round(raw.info['sfreq']*set_offset))
 stim_length= round(raw.info['sfreq'] * (0.3)) # to avoid several triggers within 300ms)
 
@@ -73,13 +74,7 @@ raw._data[trig_ch, :]=triggers # replace STI 014 by triggers
 
 # find events
 events = mne.find_events(raw)
-
-# plot events
 event_id = {'Jerk': 1}
-color = {1: 'green'}
-mne.viz.plot_events(events, raw.info['sfreq'], raw.first_samp, color=color,
-                    event_id=event_id)
-
 
 # filter the EEG (HP 0.5 Hz + 60Hz notch)
 picks=mne.pick_types(raw.info, eeg=True , emg=False, ecg=True)
