@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 my_data='/path/XXX.edf'
 raw = mne.io.read_raw_edf(my_data,preload=True)
 
-# import provided sample EEG in .fif format (available on https://github.com/brohaut/myoclonus_back_averaging)
-sample_data='/path/EEG_sample_B.fif'
+# import the provided sample EEG_sample_raw.fif (available on https://github.com/brohaut/myoclonus_back_averaging)
+sample_data='/path/EEG_sample_raw.fif'
+sample_data='/Users/rohaut/Documents/Data/myoclonus_back_averaging/EEG_sample_raw.fif'
 raw=mne.io.read_raw_fif(sample_data,preload=True)
 
 raw.set_channel_types({'CHIN1': 'emg','CHIN2': 'emg', 'ECGL': 'ecg','ECGR': 'ecg'})
@@ -38,21 +39,25 @@ raw._data[trig_chaN2[0], :]=trig_chan_deriv
 raw.filter(30, None, picks=trig_chaN2, filter_length='auto', phase='zero')
 
 # plot raw EMG signal, filtered EMG, derivative and filtered derivative in the same graph
-jitter=5e-4 # set distance between curves
-plt.plot(raw._data[trig_chaN2[0],:]) # derivative HP 30Hz
-plt.plot(trig_chan_deriv[:]-jitter) # derivative
-plt.plot(raw._data[trig_chaN1[0],:]-2*jitter); # emg HP 1Hz + noch 60Hz
-plt.plot(no_filt._data[trig_chaN1[0], :] - no_filt._data[trig_chaN2[0], :] -3*jitter); # raw EMG
+jitter=1e-3 # set distance between curves
+plt.plot(raw._data[trig_chaN2[0],:],label="derivative HP 30Hz")
+plt.plot(trig_chan_deriv[:]-jitter,label="derivative")
+plt.plot(raw._data[trig_chaN1[0],:]-2*jitter,label="EMG HP 1Hz + noch 60Hz");
+plt.plot(no_filt._data[trig_chaN1[0], :] - no_filt._data[trig_chaN2[0], :] -3*jitter,label="raw EMG");
 plt.show()
+plt.legend()
 
-# define the signal (best signal/noise ratio) to use for jerk detection (trig_chaN1 or trig_chaN2)
-trig_chan=raw._data[trig_chaN2[0], :]# here we chose the filterd derivative signal
+# Define manually the best threshold (best signal/noise ratio) to be used
+# for the automatic jerk detection (on filtered EMG or derivative): in this
+# case we chose 8e-6 on filterd derivative
 
+trig_chan=raw._data[trig_chaN2[0], :] # define the signal
 thresh= 8e-6 # define the detection threshold
 
-set_offset= 0 # set an offset if needed (in secondes)
+# additional features:
+set_offset= 0 # set an offset if needed to incras precision (in secondes)
 offset= int(round(raw.info['sfreq']*set_offset))
-stim_length= round(raw.info['sfreq'] * (0.3)) # to avoid several triggers within 300ms)
+stim_length= int(round(raw.info['sfreq'] * (0.3))) # to avoid several triggers within 300ms)
 
 triggers = np.zeros_like(trig_chan)
 trigs = []
@@ -66,7 +71,7 @@ while i < j:
 trigs = np.array(trigs)
 triggers[trigs.astype(int)-offset] = 1
 
-triggers[55100:88100] = 0  # remove emg artefacts
+triggers[55100:88100] = 0  # manually remove triggers for some artefacted EEG
 
 trig_ch = mne.pick_channels(raw.info['ch_names'], include=['STI 014'])
 raw._data[trig_ch, :]=triggers # replace STI 014 by triggers
