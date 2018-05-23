@@ -1,7 +1,7 @@
-# myoclonus_back_averaging
-Open source tool for Jerk-locked EEG back averaging using MNE-python
+# Myoclonus back averaging
+Jerk-locked EEG back averaging using MNE-python
 
-Install Python & MNE-Python tutorial: http://martinos.org/mne/stable/install_mne_python.html
+Install Python & MNE-Python tutorial avilable here: http://martinos.org/mne/stable/install_mne_python.html
 
 # Dependencies
 mne:           0.14
