@@ -1,6 +1,9 @@
 # Myoclonus back averaging
 Jerk-locked EEG back averaging using MNE-python
 
+Click on Back_averaging_myoclonus.ipynb to have a quick look at the code and output
+
+To run it on your own computer: 
 1. Install Anaconda: https://docs.anaconda.com/anaconda/install/
 2. Install MNE-Python: http://martinos.org/mne/stable/install_mne_python.html 
 3. Clone this repository
